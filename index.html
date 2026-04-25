@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOL Aliens — First Contact</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --green: #00ff88;
+      --green-dim: #00cc66;
+      --green-dark: #003322;
+      --purple: #9b5fff;
+      --purple-dim: #7040cc;
+      --bg: #020a06;
+      --bg2: #040d08;
+      --border: rgba(0, 255, 136, 0.15);
+      --text-muted: rgba(0, 255, 136, 0.45);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--green);
+      font-family: 'Space Mono', monospace;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* Starfield */
+    #stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .star {
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+      animation: twinkle var(--d) ease-in-out infinite;
+      opacity: 0;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: var(--o); transform: scale(1); }
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 255, 136, 0.015) 2px,
+        rgba(0, 255, 136, 0.015) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Noise grain */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: -200%;
+      width: 400%;
+      height: 400%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 998;
+      opacity: 0.4;
+      animation: grain 0.5s steps(1) infinite;
+    }
+    @keyframes grain {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-3%, -5%); }
+      40% { transform: translate(-7%, 3%); }
+      60% { transform: translate(3%, -2%); }
+      80% { transform: translate(-4%, 6%); }
+      100% { transform: translate(5%, -4%); }
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 3rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(2, 10, 6, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 3px;
+      color: var(--green);
+      text-shadow: 0 0 20px rgba(0,255,136,0.5);
+    }
+    .nav-logo span { color: var(--purple); }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--green); }
+    .nav-supply {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 2px;
+    }
+    .nav-supply span { color: var(--green); }
+
+    @keyframes blink-banner { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+    /* Hero BG slideshow */
+    #hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1s ease;
+      filter: brightness(0.13) saturate(0.6) hue-rotate(100deg);
+    }
+    .hero-slide.active { opacity: 1; }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10rem 2rem 4rem;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.8s ease 0.2s both;
+    }
+
+    .hero-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: clamp(3rem, 10vw, 8rem);
+      line-height: 0.9;
+      letter-spacing: -2px;
+      margin-bottom: 0.3em;
+      animation: fadeUp 0.8s ease 0.4s both;
+    }
+    .hero-title .sol {
+      color: var(--green);
+      text-shadow: 0 0 40px rgba(0,255,136,0.4), 0 0 80px rgba(0,255,136,0.2);
+      display: block;
+    }
+    .hero-title .aliens {
+      color: var(--purple);
+      text-shadow: 0 0 40px rgba(155,95,255,0.4), 0 0 80px rgba(155,95,255,0.2);
+      display: block;
+    }
+
+    .hero-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 500px;
+      line-height: 1.9;
+      margin: 2rem auto 3rem;
+      animation: fadeUp 0.8s ease 0.6s both;
+    }
+
+    /* Countdown */
+    .countdown-wrap {
+      animation: fadeUp 0.8s ease 0.8s both;
+      margin-bottom: 3rem;
+    }
+    .countdown-label {
+      font-size: 0.6rem;
+      letter-spacing: 4px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .countdown {
+      display: flex;
+      gap: 1.5rem;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .cd-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .cd-num {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--green);
+      text-shadow: 0 0 20px rgba(0,255,136,0.5);
+      background: rgba(0, 255, 136, 0.05);
+      border: 1px solid var(--border);
+      padding: 12px 18px;
+      min-width: 80px;
+      text-align: center;
+      line-height: 1;
+      position: relative;
+    }
+    .cd-num::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,255,136,0.05) 0%, transparent 100%);
+    }
+    .cd-unit {
+      font-size: 0.55rem;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .cd-sep {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5rem;
+      color: var(--green);
+      opacity: 0.3;
+      padding-bottom: 14px;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.05; } }
+
+    /* Stats bar */
+    .stats-bar {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: rgba(0,255,136,0.02);
+      animation: fadeUp 0.8s ease 1s both;
+    }
+    .stat-item {
+      padding: 2rem 4rem;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-val {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .stat-label {
+      font-size: 0.6rem;
+      letter-spacing: 3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* Marquee */
+    .marquee-outer {
+      position: relative;
+      z-index: 1;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+      background: rgba(0,255,136,0.02);
+    }
+    .marquee-track {
+      display: flex;
+      gap: 48px;
+      animation: marquee 20s linear infinite;
+      white-space: nowrap;
+    }
+    .marquee-track span {
+      font-size: 0.6rem;
+      letter-spacing: 4px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .marquee-track span.accent { color: var(--green); }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* Section */
+    section {
+      position: relative;
+      z-index: 1;
+    }
+
+    .section-header {
+      text-align: center;
+      padding: 5rem 2rem 3rem;
+    }
+    .section-eyebrow {
+      font-size: 0.6rem;
+      letter-spacing: 5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    /* Gallery */
+    .gallery-outer {
+      padding: 0 2rem 5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .nft-card {
+      border: 1px solid var(--border);
+      background: rgba(0,255,136,0.02);
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+    .nft-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,255,136,0.05) 0%, transparent 60%);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .nft-card:hover {
+      border-color: rgba(0,255,136,0.5);
+      transform: translateY(-4px);
+    }
+    .nft-card:hover .card-scan {
+      animation-play-state: running;
+    }
+
+    .card-scan {
+      position: absolute;
+      top: -100%;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: linear-gradient(180deg, transparent, rgba(0,255,136,0.06), transparent);
+      z-index: 2;
+      pointer-events: none;
+      animation: scan 1.5s linear infinite;
+      animation-play-state: paused;
+    }
+    @keyframes scan { from { top: -40%; } to { top: 120%; } }
+
+    .nft-img-wrap {
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: #020a06;
+    }
+    .nft-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease;
+      filter: saturate(1.1) brightness(0.95);
+    }
+    .nft-card:hover .nft-img-wrap img { transform: scale(1.06); }
+
+    .card-info {
+      padding: 10px 14px 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-name {
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      color: var(--green);
+    }
+    .card-badge {
+      font-size: 0.55rem;
+      letter-spacing: 1px;
+      color: var(--purple);
+      background: rgba(155,95,255,0.1);
+      border: 1px solid rgba(155,95,255,0.2);
+      padding: 2px 8px;
+    }
+
+    /* Floating alien animation for featured cards */
+    .nft-card.featured .nft-img-wrap img {
+      animation: float 4s ease-in-out infinite;
+    }
+    .nft-card:nth-child(2).featured .nft-img-wrap img { animation-delay: 0.5s; }
+    .nft-card:nth-child(3).featured .nft-img-wrap img { animation-delay: 1s; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* About */
+    .about {
+      border-top: 1px solid var(--border);
+      padding: 6rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+    .about-text h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      line-height: 1.3;
+    }
+    .about-text p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 2;
+      margin-bottom: 1rem;
+    }
+    .about-glyph {
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 8rem;
+      color: var(--green);
+      opacity: 0.15;
+      animation: pulse-glow 3s ease-in-out infinite;
+      line-height: 1;
+    }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.1; text-shadow: none; }
+      50% { opacity: 0.2; text-shadow: 0 0 60px rgba(0,255,136,0.3); }
+    }
+
+    /* Traits */
+    .traits-section {
+      border-top: 1px solid var(--border);
+      padding: 5rem 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    .traits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 3rem;
+    }
+    .trait-card {
+      border: 1px solid var(--border);
+      padding: 1.5rem 1.2rem;
+      background: rgba(0,255,136,0.02);
+      transition: border-color 0.2s;
+    }
+    .trait-card:hover { border-color: rgba(0,255,136,0.4); }
+    .trait-icon { font-size: 1.5rem; margin-bottom: 0.8rem; }
+    .trait-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+    .trait-pct {
+      font-size: 1.4rem;
+      font-weight: 700;
+      font-family: 'Orbitron', sans-serif;
+      color: var(--purple);
+    }
+    .trait-desc { font-size: 0.6rem; color: var(--text-muted); margin-top: 4px; letter-spacing: 1px; }
+
+    /* Roadmap */
+    .roadmap {
+      border-top: 1px solid var(--border);
+      padding: 5rem 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .roadmap-list { margin-top: 3rem; display: flex; flex-direction: column; gap: 0; }
+    .roadmap-item {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 2rem;
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .roadmap-item:last-child { border-bottom: none; }
+    .rm-phase {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding-top: 4px;
+    }
+    .rm-phase.active { color: var(--green); }
+    .rm-content h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 0.5rem;
+    }
+    .rm-content p { font-size: 0.72rem; color: var(--text-muted); line-height: 1.8; }
+    .rm-dot {
+      position: absolute;
+      left: 68px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      border: 1px solid var(--green);
+      background: var(--bg);
+    }
+    .rm-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(0,255,136,0.6);
+      animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { box-shadow: 0 0 6px rgba(0,255,136,0.6); }
+      50% { box-shadow: 0 0 20px rgba(0,255,136,0.8); }
+    }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 3rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,255,136,0.01);
+    }
+    .footer-logo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+    }
+    .footer-logo span { color: var(--purple); }
+    .footer-links { display: flex; gap: 2rem; }
+    .footer-links a {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--green); }
+    .footer-copy { font-size: 0.6rem; color: rgba(0,255,136,0.2); letter-spacing: 1px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Glitch on logo hover */
+    .nav-logo:hover {
+      animation: glitch 0.3s steps(2) 1;
+    }
+    @keyframes glitch {
+      0% { clip-path: inset(0 0 90% 0); transform: translateX(-2px); }
+      20% { clip-path: inset(40% 0 40% 0); transform: translateX(2px); }
+      40% { clip-path: inset(70% 0 10% 0); transform: translateX(-1px); }
+      60% { clip-path: inset(20% 0 60% 0); transform: translateX(1px); }
+      80% { clip-path: inset(0 0 0 0); transform: translateX(0); }
+      100% { clip-path: none; transform: none; }
+    }
+
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.2rem; }
+      .nav-links, .nav-supply { display: none; }
+      .stat-item { padding: 1.5rem 1.5rem; }
+      .about { grid-template-columns: 1fr; gap: 2rem; }
+      .about-glyph { display: none; }
+      footer { flex-direction: column; gap: 1.5rem; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Stars -->
+<div id="stars"></div>
+
+<!-- Stealth Banner -->
+<div id="stealth-banner" style="position:fixed;top:0;left:0;right:0;z-index:200;background:#00ff88;color:#020a06;text-align:center;padding:10px 2rem;font-family:'Orbitron',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:1.5rem;">
+  <span style="animation:blink-banner 1s step-end infinite;">⬡</span>
+  <span>PUMP.FUN STEALTH LAUNCH INBOUND</span>
+  <span style="font-family:'Space Mono',monospace;font-weight:400;opacity:0.7;letter-spacing:2px;">— be early or be left behind —</span>
+  <span style="animation:blink-banner 1s step-end infinite 0.5s;">⬡</span>
+</div>
+
+<!-- Nav -->
+<nav style="top:38px;">
+  <div class="nav-logo">SOL<span>ALIENS</span></div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div id="hero-bg"></div>
+  <div class="hero-eyebrow">// Solana blockchain · 999 unique entities //</div>
+  <h1 class="hero-title">
+    <span class="sol">SOL</span>
+    <span class="aliens">ALIENS</span>
+  </h1>
+  <p class="hero-sub">
+    999 extraterrestrial beings beamed directly onto the Solana blockchain.
+    Each alien is a one-of-a-kind entity — generated from deep space,
+    verified on-chain, and waiting to be claimed.
+  </p>
+
+  <div class="countdown-wrap">
+    <div class="countdown-label">// transmission begins in //</div>
+    <div class="countdown">
+      <div class="cd-block">
+        <div class="cd-num" id="cd-h">06</div>
+        <div class="cd-unit">hours</div>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-block">
+        <div class="cd-num" id="cd-m">00</div>
+        <div class="cd-unit">minutes</div>
+      </div>
+      <div class="cd-sep">:</div>
+      <div class="cd-block">
+        <div class="cd-num" id="cd-s">00</div>
+        <div class="cd-unit">seconds</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-val">999</div><div class="stat-label">Total Supply</div></div>
+  <div class="stat-item"><div class="stat-val">0.05 ◎</div><div class="stat-label">Mint Price</div></div>
+  <div class="stat-item"><div class="stat-val">147</div><div class="stat-label">Rare Traits</div></div>
+  <div class="stat-item"><div class="stat-val">∞</div><div class="stat-label">Galaxies Explored</div></div>
+</div>
+
+<!-- Marquee -->
+<div class="marquee-outer">
+  <div class="marquee-track">
+    <span class="accent">◈ SOL ALIENS</span><span>FIRST CONTACT</span><span class="accent">◈ 999 ENTITIES</span>
+    <span>SOLANA BLOCKCHAIN</span><span class="accent">◈ MINT SOON</span><span>PROOF OF EXISTENCE</span>
+    <span class="accent">◈ DEEP SPACE ORIGINS</span><span>RARE TRAITS</span><span class="accent">◈ SOL ALIENS</span>
+    <span>FIRST CONTACT</span><span class="accent">◈ 999 ENTITIES</span><span>SOLANA BLOCKCHAIN</span>
+    <span class="accent">◈ MINT SOON</span><span>PROOF OF EXISTENCE</span><span class="accent">◈ DEEP SPACE ORIGINS</span>
+    <span>RARE TRAITS</span>
+  </div>
+</div>
+
+<!-- Gallery -->
+<section id="gallery">
+  <div class="section-header">
+    <div class="section-eyebrow">// alien life confirmed //</div>
+    <div class="section-title">Collection Preview</div>
+  </div>
+  <div class="gallery-outer">
+    <div class="gallery-grid" id="gallery-grid">
+      <!-- Cards injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- About -->
+<section id="about" style="border-top: 1px solid var(--border);">
+  <div class="about">
+    <div class="about-text">
+      <h2>They came from<br>beyond the chain.</h2>
+      <p>SOL Aliens are 999 unique extraterrestrial beings that have traveled across the cosmos to make first contact — on the Solana blockchain.</p>
+      <p>Each alien carries its own DNA: a combination of rare traits, atmospheric colorings, and interdimensional markings that make it unlike any other entity in the universe.</p>
+      <p>No two are the same. No two worlds are the same. Your alien is yours alone.</p>
+    </div>
+    <div class="about-glyph">👾</div>
+  </div>
+</section>
+
+<!-- Traits -->
+<section style="border-top: 1px solid var(--border);">
+  <div class="traits-section">
+    <div class="section-eyebrow" style="text-align:center;">// genetic breakdown //</div>
+    <div class="section-title" style="text-align:center; margin-top:0.5rem;">Trait Rarity</div>
+    <div class="traits-grid">
+      <div class="trait-card">
+        <div class="trait-icon">🟢</div>
+        <div class="trait-name">Skin Type</div>
+        <div class="trait-pct">12 vars</div>
+        <div class="trait-desc">From plasma to obsidian</div>
+      </div>
+      <div class="trait-card">
+        <div class="trait-icon">👁</div>
+        <div class="trait-name">Eye Form</div>
+        <div class="trait-pct">9 vars</div>
+        <div class="trait-desc">Compound, void, cycloptic</div>
+      </div>
+      <div class="trait-card">
+        <div class="trait-icon">🌌</div>
+        <div class="trait-name">Origin</div>
+        <div class="trait-pct">15 vars</div>
+        <div class="trait-desc">Galaxy of birth</div>
+      </div>
+      <div class="trait-card">
+        <div class="trait-icon">⚡</div>
+        <div class="trait-name">Aura</div>
+        <div class="trait-pct">8 vars</div>
+        <div class="trait-desc">Energy signature</div>
+      </div>
+      <div class="trait-card">
+        <div class="trait-icon">🛸</div>
+        <div class="trait-name">Vessel</div>
+        <div class="trait-pct">6 vars</div>
+        <div class="trait-desc">Mode of travel</div>
+      </div>
+      <div class="trait-card">
+        <div class="trait-icon">💎</div>
+        <div class="trait-name">Legendary</div>
+        <div class="trait-pct">1%</div>
+        <div class="trait-desc">Ultra rare entities</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Roadmap -->
+<section id="roadmap">
+  <div class="roadmap">
+    <div class="section-eyebrow" style="text-align:center;">// transmission log //</div>
+    <div class="section-title" style="text-align:center; margin-top:0.5rem;">Mission Roadmap</div>
+    <div class="roadmap-list">
+      <div class="roadmap-item">
+        <div class="rm-phase active">Phase 01</div>
+        <div class="rm-dot active"></div>
+        <div class="rm-content">
+          <h3>First Contact</h3>
+          <p>999 SOL Aliens mint on Solana. Community forms. Discord opens. First contact established with early holders.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-phase">Phase 02</div>
+        <div class="rm-dot"></div>
+        <div class="rm-content">
+          <h3>Market Listing</h3>
+          <p>Listed on Magic Eden and Tensor. Rarity rankings published. Trait explorer goes live.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-phase">Phase 03</div>
+        <div class="rm-dot"></div>
+        <div class="rm-content">
+          <h3>Alien Intel Drop</h3>
+          <p>Holder-only lore drops. Each alien's origin story revealed. Staking mechanics introduced.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="rm-phase">Phase 04</div>
+        <div class="rm-dot"></div>
+        <div class="rm-content">
+          <h3>Invasion Continues</h3>
+          <p>Expansion collection. Holder whitelist for Series 2. Merch drops for rare holders.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Token Holder Benefits -->
+<section id="token-benefits" style="border-top:1px solid var(--border); position:relative; z-index:1; background: rgba(0,255,136,0.01);">
+  <div style="max-width:1100px; margin:0 auto; padding:6rem 2rem;">
+    <div style="text-align:center; margin-bottom:4rem;">
+      <div style="font-size:0.6rem;letter-spacing:5px;color:var(--text-muted);text-transform:uppercase;margin-bottom:1rem;">// pump.fun token holders only //</div>
+      <div style="font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:700;color:var(--green);margin-bottom:1rem;">Why Hold the Token?</div>
+      <p style="font-size:0.75rem;color:var(--text-muted);max-width:550px;margin:0 auto;line-height:2;">Holding the SOL Aliens pump.fun token isn't just a trade — it's your boarding pass to a closed ecosystem of real NFT benefits, exclusive drops, and ongoing rewards.</p>
+    </div>
+
+    <!-- Tier system -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;border:1px solid var(--border);margin-bottom:4rem;">
+      <div class="benefit-tier" style="padding:2.5rem 2rem;border-right:1px solid var(--border);background:rgba(0,255,136,0.02);">
+        <div style="font-family:'Orbitron',sans-serif;font-size:0.55rem;letter-spacing:3px;color:var(--text-muted);margin-bottom:0.8rem;">TIER 01 — ANY AMOUNT</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;color:var(--green);margin-bottom:1.5rem;">Initiate</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.8rem;">
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--green);flex-shrink:0;">▸</span>Early access to the NFT mint before public</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--green);flex-shrink:0;">▸</span>Whitelisted wallet for guaranteed mint slot</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--green);flex-shrink:0;">▸</span>Access to holder-only Discord channels</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--green);flex-shrink:0;">▸</span>Vote on collection trait decisions</li>
+        </ul>
+      </div>
+      <div class="benefit-tier" style="padding:2.5rem 2rem;border-right:1px solid var(--border);background:rgba(155,95,255,0.04);">
+        <div style="font-family:'Orbitron',sans-serif;font-size:0.55rem;letter-spacing:3px;color:var(--purple);margin-bottom:0.8rem;">TIER 02 — TOP 500 HOLDERS</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;color:var(--purple);margin-bottom:1.5rem;">Navigator</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.8rem;">
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--purple);flex-shrink:0;">▸</span>Everything in Initiate tier</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--purple);flex-shrink:0;">▸</span>1 free NFT airdrop from Series 1 reserve</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--purple);flex-shrink:0;">▸</span>Discounted mint price — 0.03 ◎ vs 0.05 ◎</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--purple);flex-shrink:0;">▸</span>Snapshot-based royalty share from secondary sales</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:var(--purple);flex-shrink:0;">▸</span>Priority whitelist for Series 2 expansion</li>
+        </ul>
+      </div>
+      <div class="benefit-tier" style="padding:2.5rem 2rem;background:rgba(255,215,0,0.03);">
+        <div style="font-family:'Orbitron',sans-serif;font-size:0.55rem;letter-spacing:3px;color:#ffd700;margin-bottom:0.8rem;">TIER 03 — TOP 50 HOLDERS</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;color:#ffd700;margin-bottom:1.5rem;">Commander</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.8rem;">
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:#ffd700;flex-shrink:0;">▸</span>Everything in Navigator tier</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:#ffd700;flex-shrink:0;">▸</span>2 legendary-tier NFT airdrops — guaranteed rare</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:#ffd700;flex-shrink:0;">▸</span>Name etched into on-chain lore as a Founder</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:#ffd700;flex-shrink:0;">▸</span>Direct line to dev — shape the project roadmap</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:#ffd700;flex-shrink:0;">▸</span>Physical merch drop shipped to top 10 wallets</li>
+          <li style="font-size:0.7rem;color:var(--text-muted);display:flex;gap:10px;align-items:flex-start;"><span style="color:#ffd700;flex-shrink:0;">▸</span>Revenue share from future collections</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Why now callout -->
+    <div style="border:1px solid rgba(0,255,136,0.25);padding:3rem;background:rgba(0,255,136,0.03);position:relative;overflow:hidden;">
+      <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent);"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,136,0.5),transparent);"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2rem;text-align:center;">
+        <div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:700;color:var(--green);">100%</div>
+          <div style="font-size:0.6rem;letter-spacing:2px;color:var(--text-muted);margin-top:6px;text-transform:uppercase;">royalties go to<br>holder pool</div>
+        </div>
+        <div style="border-left:1px solid var(--border);">
+          <div style="font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:700;color:var(--green);">3 drops</div>
+          <div style="font-size:0.6rem;letter-spacing:2px;color:var(--text-muted);margin-top:6px;text-transform:uppercase;">exclusive NFT<br>airdrops planned</div>
+        </div>
+        <div style="border-left:1px solid var(--border);">
+          <div style="font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:700;color:var(--green);">Series 2</div>
+          <div style="font-size:0.6rem;letter-spacing:2px;color:var(--text-muted);margin-top:6px;text-transform:uppercase;">token holders mint<br>free before public</div>
+        </div>
+        <div style="border-left:1px solid var(--border);">
+          <div style="font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:700;color:var(--green);">Stealth</div>
+          <div style="font-size:0.6rem;letter-spacing:2px;color:var(--text-muted);margin-top:6px;text-transform:uppercase;">no VC. no presale.<br>fair launch only</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align:center;margin-top:2rem;font-size:0.65rem;color:rgba(0,255,136,0.25);letter-spacing:2px;">// snapshots taken at random intervals post-launch. hold early, hold long. //</p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">SOL<span>ALIENS</span></div>
+  <div class="footer-copy">© 2026 SOL ALIENS. ALL RIGHTS RESERVED.</div>
+</footer>
+
+<script>
+  // ── Starfield ──
+  const starsEl = document.getElementById('stars');
+  for (let i = 0; i < 200; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = Math.random() * 2 + 0.5;
+    s.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      top:${Math.random()*100}%;
+      --d:${2 + Math.random()*4}s;
+      --o:${0.3 + Math.random()*0.7};
+      animation-delay:${Math.random()*4}s;
+    `;
+    starsEl.appendChild(s);
+  }
+
+  // ── Countdown ──
+  // Set target 6 hours from page load
+  const target = Date.now() + 6 * 60 * 60 * 1000;
+
+  function pad(n) { return String(Math.max(0, n)).padStart(2, '0'); }
+
+  function tick() {
+    const diff = Math.max(0, target - Date.now());
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('cd-h').textContent = pad(h);
+    document.getElementById('cd-m').textContent = pad(m);
+    document.getElementById('cd-s').textContent = pad(s);
+    if (diff > 0) setTimeout(tick, 1000);
+    else {
+      document.getElementById('cd-h').textContent = '00';
+      document.getElementById('cd-m').textContent = '00';
+      document.getElementById('cd-s').textContent = '00';
+    }
+  }
+  tick();
+
+  // ── CONFIG — just change this number when you add more PNGs ──
+  const NFT_COUNT = 35; // ← update this when you add nft_36.png, nft_37.png etc.
+
+  // Auto-build image array from nft_1.png → nft_N.png
+  const images = Array.from({length: NFT_COUNT}, (_, i) => `images/nft_${i+1}.png`);
+
+  // ── Hero background slideshow ──
+  const heroBg = document.getElementById('hero-bg');
+  // Use a shuffled subset so slideshow feels random
+  const shuffled = [...images].sort(() => Math.random() - 0.5);
+  shuffled.forEach((src, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'hero-slide' + (i === 0 ? ' active' : '');
+    slide.style.backgroundImage = `url('${src}')`;
+    heroBg.appendChild(slide);
+  });
+  let currentSlide = 0;
+  setInterval(() => {
+    const slides = heroBg.querySelectorAll('.hero-slide');
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (currentSlide + 1) % slides.length;
+    slides[currentSlide].classList.add('active');
+  }, 600); // flick every 0.6s for that fast flash effect
+
+  // ── Gallery ──
+  const rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+  const grid = document.getElementById('gallery-grid');
+
+  images.forEach((src, i) => {
+    const rarity = rarities[Math.floor(Math.random() * rarities.length)];
+    const isLegendary = rarity === 'Legendary';
+    const card = document.createElement('div');
+    card.className = 'nft-card' + (i < 3 ? ' featured' : '');
+    card.innerHTML = `
+      <div class="card-scan"></div>
+      <div class="nft-img-wrap">
+        <img src="${src}" alt="SOL Alien #${String(i+1).padStart(3,'0')}" loading="lazy" />
+      </div>
+      <div class="card-info">
+        <div class="card-name">#${String(i+1).padStart(3,'0')}</div>
+        <div class="card-badge" style="${isLegendary ? 'color:#ffd700;background:rgba(255,215,0,0.1);border-color:rgba(255,215,0,0.3);' : ''}">${rarity}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  // ── Scroll fade-in ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.nft-card, .trait-card, .roadmap-item').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
